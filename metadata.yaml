@@ -1,0 +1,15 @@
+homepage: "https://github.com/analyticskgmedia/user-data-listener"
+documentation: "https://github.com/analyticskgmedia/user-data-listener/blob/main/README.md"
+versions:
+  - sha: "commit_SHA"
+    changeNotes: |
+      Initial release (v1.0.0)
+      - Automatic detection and capture of user data from forms
+      - Support for email, phone, name, and address fields
+      - Multiple listening modes for different use cases
+      - Built-in consent checking and data hashing
+      - Flexible output to dataLayer and/or localStorage
+      - Smart field detection with multi-language support
+      - Performance optimized with debouncing
+      - No external dependencies required
+      - Debug logging for troubleshooting
