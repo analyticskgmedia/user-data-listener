@@ -1,7 +1,7 @@
 homepage: "https://github.com/analyticskgmedia/user-data-listener"
 documentation: "https://github.com/analyticskgmedia/user-data-listener/blob/main/README.md"
 versions:
-  - sha: "commit_SHA"
+  - sha: "92ba67b97b852d8bb5c3c6e38f744efbd2239940"
     changeNotes: |
       Initial release (v1.0.0)
       - Automatic detection and capture of user data from forms
