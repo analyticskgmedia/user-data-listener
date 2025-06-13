@@ -246,8 +246,9 @@ Enable **GDPR Mode** to ensure compliance:
 ### Consent Integration
 The template respects Google Consent Mode:
 - `analytics_storage`: Required for localStorage
-- `ad_storage` + `ad_user_data`: Required for advertising use
+- `ad_storage` + `ad_user_data` + `ad_personalization`: Required for full advertising functionality  
 - Automatically stops processing if consent denied
+- Supports granular user control over data usage
 
 ## Field Detection
 
