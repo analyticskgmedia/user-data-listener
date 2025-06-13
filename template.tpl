@@ -247,15 +247,17 @@ const isConsentGranted = require('isConsentGranted');
 const adStorageGranted = isConsentGranted('ad_storage');
 const analyticsStorageGranted = isConsentGranted('analytics_storage');
 const adUserDataGranted = isConsentGranted('ad_user_data');
+const adPersonalizationGranted = isConsentGranted('ad_personalization');
 
 // Determine if we should proceed based on consent
 let shouldProceed = false;
 
 // For analytics purposes, we need analytics_storage
-// For advertising purposes, we need ad_storage and ideally ad_user_data
+// For advertising purposes, we need ad_storage, ad_user_data, and ad_personalization
 if (data.outputMethod === 'dataLayer' || data.outputMethod === 'both') {
-  // Check if we have minimum required consent
-  if (analyticsStorageGranted || (adStorageGranted && adUserDataGranted)) {
+  // Check if we have minimum required consent for chosen output method
+  if (analyticsStorageGranted || 
+      (adStorageGranted && adUserDataGranted && adPersonalizationGranted)) {
     shouldProceed = true;
   }
 }
@@ -272,7 +274,8 @@ if (!shouldProceed) {
     log('User Data Listener: Insufficient consent granted. Current consent state:', {
       ad_storage: adStorageGranted,
       analytics_storage: analyticsStorageGranted,
-      ad_user_data: adUserDataGranted
+      ad_user_data: adUserDataGranted,
+      ad_personalization: adPersonalizationGranted
     });
   }
   data.gtmOnSuccess();
@@ -753,6 +756,37 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
+                    "string": "ad_user_data"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "consentType"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
                     "string": "analytics_storage"
                   },
                   {
@@ -784,7 +818,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "ad_user_data"
+                    "string": "ad_personalization"
                   },
                   {
                     "type": 8,
@@ -1010,4 +1044,4 @@ Enhanced version with:
 - Added intelligent data merging to preserve existing user data
 - Smart hash management for email/phone changes
 - Update tracking with timestamps and counters
-- Full Google Consent Mode integration only 
+- Full Google Consent Mode integration only
