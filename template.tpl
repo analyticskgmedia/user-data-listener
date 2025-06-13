@@ -204,17 +204,25 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "type": "CHECKBOX",
+        "name": "gdprMode",
+        "checkboxText": "GDPR Mode - Store ONLY hashed data (EU compliance)",
+        "simpleValueType": true,
+        "defaultValue": false,
+        "help": "For EU clients: Only stores hashed email/phone, discards originals. Keeps names for personalization.",
+        "enablingConditions": [
+          {
+            "paramName": "hashData",
+            "paramValue": true,
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "CHECKBOX",
         "name": "enableLogging",
         "checkboxText": "Enable Console Logging",
         "simpleValueType": true,
         "defaultValue": false
-      },
-      {
-        "type": "TEXT",
-        "name": "cookieConsent",
-        "displayName": "Cookie Consent Variable",
-        "simpleValueType": true,
-        "help": "GTM variable that returns true when user has consented to data collection (leave empty to skip consent check)"
       }
     ]
   }
@@ -226,7 +234,6 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 const log = require('logToConsole');
 const createQueue = require('createQueue');
 const copyFromDataLayer = require('copyFromDataLayer');
-const getCookieValues = require('getCookieValues');
 const localStorage = require('localStorage');
 const sha256 = require('sha256');
 const queryPermission = require('queryPermission');
@@ -272,46 +279,87 @@ if (!shouldProceed) {
   return;
 }
 
-// Check legacy cookie consent if configured (backwards compatibility)
-if (data.cookieConsent) {
-  const consentValue = getCookieValues(data.cookieConsent);
-  if (!consentValue || consentValue.length === 0 || consentValue[0] !== 'true') {
-    if (data.enableLogging) {
-      log('User Data Listener: No cookie consent, exiting');
-    }
-    data.gtmOnSuccess();
-    return;
-  }
-}
-
 // Create dataLayer push function
 const dataLayerPush = createQueue('dataLayer');
 
 // Initialize captured data storage
 let capturedData = {};
 
-// Process and store data
+// Process and store data with improved hashing and GDPR compliance
 const processData = function(type, value) {
   if (!value || typeof value !== 'string') return;
   
   value = value.trim();
   if (!value) return;
   
+  // Store data temporarily
   capturedData[type] = value;
-  
-  if (data.hashData && (type === 'email' || type === 'phone')) {
-    sha256(value, function(hashedValue) {
-      capturedData[type + '_hashed'] = hashedValue;
-    }, data.gtmOnFailure);
-  }
   
   if (data.enableLogging) {
     log('User Data Listener: Captured', type, ':', value);
   }
+  
+  // Handle hashing for sensitive data
+  if (data.hashData && (type === 'email' || type === 'phone')) {
+    if (data.enableLogging) {
+      log('User Data Listener: Starting hash for', type, 'GDPR Mode:', data.gdprMode);
+    }
+    
+    sha256(value, function(hashedValue) {
+      capturedData[type + '_hashed'] = hashedValue;
+      
+      // GDPR Mode: Remove original sensitive data after hashing
+      if (data.gdprMode) {
+        capturedData[type] = undefined; // Remove original for GDPR compliance
+        if (data.enableLogging) {
+          log('User Data Listener: GDPR Mode - Removed original', type, 'after hashing');
+        }
+      }
+      
+      if (data.enableLogging) {
+        log('User Data Listener: Hash completed for', type, ':', hashedValue);
+      }
+      
+      // Check if this is the last hash we're waiting for
+      let allHashesComplete = true;
+      if (data.hashData) {
+        if (capturedData.email && !capturedData.email_hashed) allHashesComplete = false;
+        if (capturedData.phone && !capturedData.phone_hashed) allHashesComplete = false;
+      }
+      
+      // If all hashes are complete, send data
+      if (allHashesComplete) {
+        if (data.enableLogging) {
+          log('User Data Listener: All hashes complete, sending data');
+        }
+        sendDataAfterHashing();
+      }
+    }, function() {
+      if (data.enableLogging) {
+        log('User Data Listener: Hash failed for', type);
+      }
+      data.gtmOnFailure();
+    });
+  }
 };
 
-// Send captured data
+// Send captured data with intelligent merging (called immediately for non-hashed data)
 const sendData = function() {
+  // If hashing is enabled and we have email/phone, wait for hashing to complete
+  if (data.hashData && (capturedData.email || capturedData.phone)) {
+    if (data.enableLogging) {
+      log('User Data Listener: Hashing enabled, waiting for hash completion');
+    }
+    // Don't send data yet - wait for hash callbacks
+    return;
+  }
+  
+  // Proceed with sending data
+  sendDataAfterHashing();
+};
+
+// Send data after hashing is complete (or immediately if no hashing needed)
+const sendDataAfterHashing = function() {
   let hasData = false;
   for (let key in capturedData) {
     if (capturedData.hasOwnProperty(key)) {
@@ -347,16 +395,70 @@ const sendData = function() {
   
   if (data.outputMethod === 'localStorage' || data.outputMethod === 'both') {
     if (queryPermission('access_local_storage', 'write', data.localStorageKey)) {
+      
+      // ENHANCED: Read existing data and merge intelligently
+      let existingUserData = {};
+      let existingData = null;
+      const existingDataStr = localStorage.getItem(data.localStorageKey);
+      
+      if (existingDataStr) {
+        existingData = JSON.parse(existingDataStr);
+        if (existingData && existingData.userData) {
+          existingUserData = existingData.userData;
+          if (data.enableLogging) {
+            log('User Data Listener: Found existing data to merge:', existingUserData);
+          }
+        }
+      }
+      
+      // Merge strategy: New data takes precedence, but preserve complementary data
+      const mergedUserData = {};
+      
+      // Copy existing data first
+      for (let key in existingUserData) {
+        if (existingUserData.hasOwnProperty(key)) {
+          mergedUserData[key] = existingUserData[key];
+        }
+      }
+      
+      // Add/overwrite with new captured data (excluding undefined values for GDPR mode)
+      for (let key in capturedData) {
+        if (capturedData.hasOwnProperty(key) && capturedData[key] !== undefined) {
+          mergedUserData[key] = capturedData[key];
+        }
+      }
+      
+      // Smart handling for related fields
+      // If we get a new email, remove the old hashed version since it doesn't match
+      if (capturedData.email && existingUserData.email_hashed && capturedData.email !== existingUserData.email) {
+        // Remove old hashed email since it doesn't match new email
+        mergedUserData.email_hashed = undefined;
+      }
+      
+      if (capturedData.phone && existingUserData.phone_hashed && capturedData.phone !== existingUserData.phone) {
+        // Remove old hashed phone since it doesn't match new phone
+        mergedUserData.phone_hashed = undefined;
+      }
+      
       const dataToStore = {
         timestamp: makeString(getTimestampMillis()),
         source: 'kg_media_user_data_listener',
-        userData: capturedData
+        lastUpdated: makeString(getTimestampMillis()),
+        updateCount: (existingData && existingData.updateCount) ? existingData.updateCount + 1 : 1,
+        userData: mergedUserData
       };
       
       localStorage.setItem(data.localStorageKey, JSON.stringify(dataToStore));
       
       if (data.enableLogging) {
-        log('User Data Listener: Saved to localStorage', dataToStore);
+        log('User Data Listener: Merged and saved to localStorage', {
+          previousData: existingUserData,
+          newData: capturedData,
+          mergedResult: mergedUserData,
+          updateCount: dataToStore.updateCount,
+          gdprMode: data.gdprMode,
+          hashingEnabled: data.hashData
+        });
       }
     }
   }
@@ -821,27 +923,6 @@ ___WEB_PERMISSIONS___
   {
     "instance": {
       "key": {
-        "publicId": "get_cookies",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "cookieAccess",
-          "value": {
-            "type": 1,
-            "string": "any"
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
         "publicId": "read_data_layer",
         "versionId": "1"
       },
@@ -906,16 +987,12 @@ scenarios:
   code: |-
     const mockData = {
       captureEmail: true,
-      cookieConsent: 'consent_cookie',
       listenMode: 'forms',
       outputMethod: 'dataLayer'
     };
 
-    // Mock consent cookie
-    mock('getCookieValues', (name) => {
-      if (name === 'consent_cookie') return ['false'];
-      return undefined;
-    });
+    // Mock insufficient consent
+    mock('isConsentGranted', () => false);
 
     // Run the template code
     runCode(mockData);
@@ -927,3 +1004,10 @@ scenarios:
 ___NOTES___
 
 Created on 6/11/2025, 4:30:00 PM
+
+Enhanced version with:
+- Removed redundant Cookie Consent Variable field
+- Added intelligent data merging to preserve existing user data
+- Smart hash management for email/phone changes
+- Update tracking with timestamps and counters
+- Full Google Consent Mode integration only
