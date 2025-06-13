@@ -1010,4 +1010,4 @@ Enhanced version with:
 - Added intelligent data merging to preserve existing user data
 - Smart hash management for email/phone changes
 - Update tracking with timestamps and counters
-- Full Google Consent Mode integration only
+- Full Google Consent Mode integration only 

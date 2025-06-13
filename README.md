@@ -1,230 +1,247 @@
-# GTM User Data Listener - Automatic Form Data Capture
+# GTM User Data Listener - Smart Form Data Capture
 
-A lightweight Google Tag Manager template that automatically captures user-provided data from forms, purchases, and interactions. Perfect for enhancing conversion tracking, remarketing, and analytics without requiring code changes.
+A comprehensive Google Tag Manager template that automatically captures user data from forms, purchases, and interactions without requiring code changes. Features intelligent data merging, GDPR compliance, and cross-page persistence.
 
 ## Features
 
-- ✅ **Automatic data capture** - Intelligently detects and captures user information
-- ✅ **Google Consent Mode v2** - Built-in support for consent signals
-- ✅ **No code required** - Works immediately after installation
-- ✅ **Multiple capture modes** - Forms, clicks, or custom selectors
-- ✅ **Privacy compliant** - Respects consent choices automatically
-- ✅ **Lightweight** - Only ~8KB with zero dependencies
-- ✅ **E-commerce ready** - Perfect for checkout and purchase events
-- ✅ **Debug mode** - Console logging for easy troubleshooting
-- ✅ **Flexible output** - Push to dataLayer or localStorage
+- ✅ **Automatic Data Capture** - No code changes required, works with any form
+- ✅ **Smart Data Merging** - Preserves existing data while adding new information
+- ✅ **GDPR Compliance** - Hash-only mode for EU clients with full consent integration
+- ✅ **Multiple Output Methods** - dataLayer, localStorage, or both
+- ✅ **SHA-256 Hashing** - Secure hashing for sensitive data (email, phone)
+- ✅ **Google Consent Mode v2** - Full integration with all consent types
+- ✅ **Comprehensive Logging** - Detailed debugging information
+- ✅ **Cross-page Persistence** - Works with User Data Restorer template
 
 ## Installation
 
-### 1. Import the Template
+### 1. Upload the Template to GTM
 
-1. Download `template.tpl` from this repository
-2. In Google Tag Manager, go to **Templates** → **Tag Templates** → **New**
-3. Click the menu (⋮) → **Import**
-4. Select the template file and save
+1. Download the template file: `template.tpl`
+2. In GTM, go to **Templates** → **Tag Templates** → **New**
+3. Click the three dots menu → **Import**
+4. Select the template file and import it
 
-### 2. Create a Tag
+### 2. Create a New Tag
 
 1. Go to **Tags** → **New**
-2. Choose the "User Data Listener" template
-3. Configure your settings (see Configuration below)
-4. Add a trigger (typically Form Submission)
+2. Choose your imported "User Data Listener" template
+3. Configure the settings (see below)
+4. Set trigger to "Form Submission" or "All Elements - Clicks"
 5. Save and publish
 
 ## Configuration
 
 ### Data Capture Settings
 
-Choose what information to capture:
+- **Capture Email Addresses**: Automatically detect and capture email fields
+- **Capture Phone Numbers**: Automatically detect and capture phone/tel fields
+- **Capture Names (First & Last)**: Extract first and last names from forms
+- **Capture Address Information**: Capture address, city, postal code, country
 
-- **Email Addresses** - Detects email inputs and validates format
-- **Phone Numbers** - Captures phone fields with basic validation
-- **Names** - Intelligently splits full names or captures first/last separately
-- **Address Information** - Street, city, postal code, and country
+### Listener Configuration
 
-### Listen Modes
+- **Listen Mode**: Choose what events to monitor
+  - `All Forms & Interactions`: Monitor all form and click events
+  - `Form Submissions Only`: Only capture on form submissions
+  - `Click Events Only`: Only capture on click events
+  - `Custom Selector`: Use custom CSS selector
+- **CSS Selector**: Custom selector for targeted data capture
+- **Debounce Delay**: Delay in milliseconds to prevent duplicate captures
 
-- **Form Submissions Only** - Captures when forms are submitted (recommended)
-- **All Forms & Interactions** - Also captures on field changes
-- **Click Events Only** - Captures on any click event
-- **Custom Selector** - Target specific forms with CSS selectors
+### Data Output Settings
 
-### Output Options
-
-- **Push to dataLayer** - Creates `userData.captured` event
-- **Save to localStorage** - Persists data locally
-- **Both** - Maximum flexibility
+- **Output Method**: Choose how to store captured data
+  - `Push to dataLayer`: Send data to GTM dataLayer only
+  - `Save to localStorage`: Store data in browser localStorage only
+  - `Both dataLayer and localStorage`: Use both methods (recommended)
+- **dataLayer Event Name**: Custom event name for dataLayer pushes
+- **localStorage Key**: Custom key for localStorage storage
 
 ### Advanced Settings
 
-- **Hash Sensitive Data** - SHA-256 hash emails and phones
-- **Enable Console Logging** - Debug mode for troubleshooting
-- **Cookie Consent Variable** - Optional GTM variable for consent
-
-## Usage Examples
-
-### Basic Form Tracking
-
-```javascript
-// Captures all form submissions
-Listen Mode: Form Submissions Only
-Output: Push to dataLayer
-Trigger: All Forms
-```
-
-### E-commerce Checkout
-
-```javascript
-// Captures during purchase
-Listen Mode: Custom Selector
-Selector: #checkout-form
-Trigger: Purchase Event
-```
-
-### Lead Generation
-
-```javascript
-// Newsletter signups
-Listen Mode: Custom Selector
-Selector: .newsletter-form
-Hash Data: Enabled
-```
+- **Hash Sensitive Data (SHA-256)**: Enable secure hashing for email and phone
+- **GDPR Mode**: Store ONLY hashed data for EU compliance (requires hashing enabled)
+- **Enable Console Logging**: Detailed debugging information
 
 ## Data Structure
 
-Captured data is pushed to dataLayer as:
-
+### Standard Output (dataLayer)
 ```javascript
 {
   event: 'userData.captured',
-  'userData.email': 'user@example.com',
-  'userData.phone': '+1234567890',
   'userData.firstName': 'John',
   'userData.lastName': 'Doe',
-  'userData.address': '123 Main St',
-  'userData.city': 'New York',
-  'userData.postalCode': '10001',
+  'userData.email': 'john.doe@example.com',
+  'userData.phone': '+1234567890',
   'userData.country': 'US'
 }
 ```
 
-## Using Captured Data
-
-### 1. Create Variables
-
-Create Data Layer Variables for each field:
-- Variable Name: `userData.email`
-- Variable Type: Data Layer Variable
-
-### 2. Enhanced Conversions
-
-Use variables in Google Ads/GA4:
-- Enable Enhanced Conversions
-- Map variables to user data fields
-
-### 3. Custom Events
-
-Create triggers based on captured data:
+### With Hashing Enabled
+```javascript
+{
+  event: 'userData.captured',
+  'userData.firstName': 'John',
+  'userData.lastName': 'Doe',
+  'userData.email': 'john.doe@example.com',
+  'userData.email_hashed': 'UQoDd1hKDBlxKKg5YZb+Q3HUp6AlXTKq2Z3B5coDxus=',
+  'userData.phone': '+1234567890',
+  'userData.phone_hashed': 'abc123def456...'
+}
 ```
-Event: userData.captured
-Condition: userData.email does not equal undefined
+
+### GDPR Mode (EU Compliant)
+```javascript
+{
+  event: 'userData.captured',
+  'userData.firstName': 'John',
+  'userData.lastName': 'Doe',
+  'userData.email_hashed': 'UQoDd1hKDBlxKKg5YZb+Q3HUp6AlXTKq2Z3B5coDxus=',
+  'userData.phone_hashed': 'abc123def456...'
+}
 ```
+
+### localStorage Structure
+```json
+{
+  "timestamp": "1749811721514",
+  "source": "kg_media_user_data_listener",
+  "lastUpdated": "1749811721514",
+  "updateCount": 3,
+  "userData": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "email_hashed": "UQoDd1hKDBlxKKg5YZb+Q3HUp6AlXTKq2Z3B5coDxus=",
+    "phone": "+1234567890",
+    "phone_hashed": "abc123def456...",
+    "country": "US"
+  }
+}
+```
+
+## Smart Data Merging
+
+The template intelligently merges new data with existing data:
+
+### Scenario 1: Newsletter Signup → Contact Form
+```
+Initial: { email: "user@example.com" }
+After:   { email: "user@example.com", firstName: "John", lastName: "Doe", phone: "+1234567890" }
+```
+
+### Scenario 2: Email Change
+```
+Before: { email: "old@example.com", email_hashed: "oldHash123", firstName: "John" }
+After:  { email: "new@example.com", firstName: "John" }
+```
+*Note: Old hash automatically removed when email changes*
+
+## GDPR Compliance
+
+### For EU Clients
+Enable **GDPR Mode** to ensure compliance:
+- ✅ Only hashed versions of sensitive data stored
+- ✅ Original email/phone discarded after hashing
+- ✅ Names preserved for personalization
+- ✅ Meets data minimization requirements
+- ✅ Reduces data breach impact
+
+### Consent Integration
+The template respects Google Consent Mode:
+- `analytics_storage`: Required for localStorage
+- `ad_storage` + `ad_user_data`: Required for advertising use
+- Automatically stops processing if consent denied
 
 ## Field Detection
 
-The template automatically detects fields by:
+The template automatically detects these field types:
 
-1. **Input type** (`type="email"`, `type="tel"`)
-2. **Field name** (`name="email"`, `name="phone"`)
-3. **Field ID** (`id="customer-email"`)
-4. **Common patterns** (first_name, lastName, etc.)
+### Email Fields
+- `type="email"`
+- `name` contains: email, e-mail, e_mail
+- Field validation patterns
 
-Supported patterns:
-- Email: email, e-mail, mail
-- Phone: phone, tel, mobile
-- Names: name, first_name, last_name, fname, lname
-- Address: address, street, city, zip, postal, country
+### Phone Fields
+- `type="tel"`
+- `name` contains: phone, tel, mobile, cellular
 
-## Performance
+### Name Fields
+- `name` contains: firstname, first_name, fname
+- `name` contains: lastname, last_name, lname
+- Single `name` field (automatically splits)
 
-- **Size**: ~8KB uncompressed
-- **Execution**: 1-5ms typical
-- **Impact**: Negligible
-- **No external requests**
+### Address Fields
+- `name` contains: address, street, city, zip, postal, country
 
-## Troubleshooting
+## Events
 
-### No Data Captured
+The template pushes these events to dataLayer:
 
-1. Enable Console Logging in Advanced Settings
-2. Check browser console for "User Data Listener:" messages
-3. Verify form fields match expected patterns
-4. Ensure proper trigger configuration
+- `userData.captured`: Fired when new user data is captured and processed
 
-### Testing
+## Common Use Cases
 
+### E-commerce Tracking
 ```javascript
-// Check captured data in console
-dataLayer.filter(x => x.event === 'userData.captured')
+// Capture checkout form data for enhanced conversions
+{
+  'userData.email_hashed': 'abc123...',
+  'userData.phone_hashed': 'def456...',
+  'userData.firstName': 'John',
+  'userData.lastName': 'Doe'
+}
 ```
 
-### Common Issues
+### Lead Generation
+```javascript
+// Progressive data collection across multiple forms
+Newsletter: { email: "user@example.com" }
+Contact:    { email: "user@example.com", firstName: "John", phone: "+1234567890" }
+```
 
-- **Wrong trigger type** - Use Form Submission triggers
-- **Fields not detected** - Check field names/IDs
-- **Timing issues** - Use tag sequencing if needed
-
-## Privacy & Compliance
-
-### Google Consent Mode v2
-
-The template automatically checks these consent types:
-- **analytics_storage** - Required for analytics purposes
-- **ad_storage** - Required for advertising features
-- **ad_user_data** - Required for sending user data to Google
-- **ad_personalization** - Checked but not required
-
-The template will only capture data when appropriate consent is granted:
-- For analytics: Requires `analytics_storage`
-- For advertising: Requires `ad_storage` and `ad_user_data`
-
-### Additional Privacy Features
-
-- Only captures data from form submissions
-- Respects consent settings automatically
-- Optional data hashing for sensitive information
-- No data sent to external servers
-- Cookie consent variable for legacy support
+### Cross-page Personalization
+Use with [User Data Restorer](https://github.com/analyticskgmedia/user-data-restorer) for persistent user data across page navigation.
 
 ## Browser Support
 
-- Chrome/Edge 60+
-- Firefox 55+
-- Safari 11+
-- Mobile browsers
+- Chrome/Edge: Latest 2 versions
+- Firefox: Latest 2 versions  
+- Safari: Latest 2 versions
+- Mobile browsers: iOS Safari, Chrome for Android
 
-## Contributing
+## Security
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create your feature branch
-3. Test thoroughly
-4. Submit a pull request
+- ✅ SHA-256 hashing for sensitive data
+- ✅ Google Consent Mode integration
+- ✅ GDPR-compliant data handling
+- ✅ No external dependencies
+- ✅ Secure localStorage usage
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) file for details.
+This template is provided under the Apache License version 2.0. See LICENSE file for details.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/analyticskgmedia/user-data-listener/issues)
-- **Email**: filip.aldic@kg-media.hr
-- **Website**: [kg-media.eu](https://kg-media.eu)
+For issues or questions:
+- GitHub Issues: [https://github.com/analyticskgmedia/user-data-listener/issues](https://github.com/analyticskgmedia/user-data-listener/issues)
+- Email: filip.aldic@kg-media.hr
+
+## Related Templates
+
+- **[User Data Restorer](https://github.com/analyticskgmedia/user-data-restorer)**: Companion template for cross-page data persistence
+- **[GTM Consent Banner](https://github.com/analyticskgmedia/gtm-consent-banner)**: Advanced Consent Mode v2 implementation
+
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting PRs.
 
 ## Credits
 
-Created by [KG Media](https://kg-media.eu) for the GTM community.
+Developed by [KG Media](https://kg-media.eu)
 
 ---
 
-Made with ❤️ for better data collection
+Made with ❤️ for the GTM community
