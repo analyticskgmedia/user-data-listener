@@ -1,7 +1,7 @@
 homepage: "https://github.com/analyticskgmedia/user-data-listener"
 documentation: "https://github.com/analyticskgmedia/user-data-listener/blob/main/README.md"
 versions:
-  - sha: "babf3213d7f45629d5eb02d7706755db6d49b64e"
+  - sha: "9956a5d8e2f2121af2071f9e47249e333f553eef"
     changeNotes: |
       Initial release of User Data Listener Template
       - Automatic form data capture without code changes
