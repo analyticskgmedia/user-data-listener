@@ -64,6 +64,101 @@ A comprehensive Google Tag Manager template that automatically captures user dat
 - **GDPR Mode**: Store ONLY hashed data for EU compliance (requires hashing enabled)
 - **Enable Console Logging**: Detailed debugging information
 
+## Setting Up Variables in GTM
+
+### Required Data Layer Variables
+
+After installing the template, create these **Data Layer Variables** in GTM:
+
+| Variable Name | Data Layer Variable Name | Description |
+|---------------|--------------------------|-------------|
+| `userData - Email` | `userData.email` | Original email address |
+| `userData - Email Hashed` | `userData.email_hashed` | SHA-256 hashed email (GDPR compliant) |
+| `userData - Phone` | `userData.phone` | Original phone number |
+| `userData - Phone Hashed` | `userData.phone_hashed` | SHA-256 hashed phone (GDPR compliant) |
+| `userData - First Name` | `userData.firstName` | User's first name |
+| `userData - Last Name` | `userData.lastName` | User's last name |
+| `userData - Country` | `userData.country` | User's country |
+| `userData - City` | `userData.city` | User's city |
+| `userData - Address` | `userData.address` | User's address |
+| `userData - Postal Code` | `userData.postalCode` | User's postal/zip code |
+
+### User-Provided Data Variable (Essential for Advertising)
+
+Create a **User-Provided Data variable** for enhanced conversions and advertising platforms:
+
+1. **Go to Variables** → **New** → **User-Defined Variables**
+2. **Choose Variable Type:** `User-Provided Data`
+3. **Configure fields:**
+
+#### For GDPR Mode (EU Clients - Recommended):
+```
+Variable Name: "User Data - Enhanced Conversions"
+
+Configuration:
+├── Email Address: {{userData - Email Hashed}}
+├── Phone Number: {{userData - Phone Hashed}}
+├── Address - First Name: {{userData - First Name}}
+├── Address - Last Name: {{userData - Last Name}}
+├── Address - Street: {{userData - Address}}
+├── Address - City: {{userData - City}}
+├── Address - Postal Code: {{userData - Postal Code}}
+└── Address - Country: {{userData - Country}}
+```
+
+#### For Non-GDPR Mode:
+```
+Variable Name: "User Data - Enhanced Conversions"
+
+Configuration:
+├── Email Address: {{userData - Email}}
+├── Phone Number: {{userData - Phone}}
+├── Address - First Name: {{userData - First Name}}
+├── Address - Last Name: {{userData - Last Name}}
+├── Address - Street: {{userData - Address}}
+├── Address - City: {{userData - City}}
+├── Address - Postal Code: {{userData - Postal Code}}
+└── Address - Country: {{userData - Country}}
+```
+
+### Using with Conversion Tags
+
+#### Google Ads Enhanced Conversions:
+1. **Open your Google Ads Conversion tag**
+2. **Enhanced Conversions** → **User-provided data from your website**
+3. **Select:** `{{User Data - Enhanced Conversions}}`
+
+#### Facebook Conversions API:
+```javascript
+// Use individual hashed variables
+'user_data': {
+  'em': [{{userData - Email Hashed}}],      // Hashed email
+  'ph': [{{userData - Phone Hashed}}],      // Hashed phone
+  'fn': [{{userData - First Name}}],        // First name
+  'ln': [{{userData - Last Name}}],         // Last name
+  'ct': [{{userData - City}}],              // City
+  'country': [{{userData - Country}}]       // Country
+}
+```
+
+#### GA4 Enhanced Ecommerce:
+```javascript
+gtag('event', 'purchase', {
+  'transaction_id': '12345',
+  'value': 25.42,
+  'currency': 'USD',
+  'user_data': {
+    'email_address': {{userData - Email Hashed}},
+    'phone_number': {{userData - Phone Hashed}},
+    'address': {
+      'first_name': {{userData - First Name}},
+      'last_name': {{userData - Last Name}},
+      'country': {{userData - Country}}
+    }
+  }
+});
+```
+
 ## Data Structure
 
 ### Standard Output (dataLayer)
