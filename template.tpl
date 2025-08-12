@@ -278,7 +278,7 @@ if (!shouldProceed) {
       ad_personalization: adPersonalizationGranted
     });
   }
-  data.gtmOnSuccess();
+  data.gtmOnFailure();
   return;
 }
 
